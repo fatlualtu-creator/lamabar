@@ -170,6 +170,13 @@ body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VMQ938EE16"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-VMQ938EE16');
+</script>
 </head>
 <body>
 
@@ -334,6 +341,10 @@ img{max-width:100%}
 <script>
 (function () {
   var PRICE = 199, qty = 0;
+  function track(name, params) { try { if (window.gtag) gtag("event", name, params || {}); } catch (e) {} }
+  document.querySelectorAll('a[href="#buy"]').forEach(function (a) {
+    a.addEventListener("click", function () { track("buy_now_click", { location: a.closest("header") ? "header" : "hero" }); });
+  });
   try { qty = Math.max(0, Math.min(10, parseInt(localStorage.getItem("lumabar-qty"), 10) || 0)); } catch (e) {}
   var drawer = document.getElementById("drawer"), scrim = document.getElementById("scrim");
   function inr(n) { return "₹" + n.toLocaleString("en-IN"); }
@@ -364,12 +375,14 @@ img{max-width:100%}
   document.getElementById("cart").addEventListener("click", function () {
     qty = Math.min(10, qty + 1); save(); render(); openCart();
     document.getElementById("toast").textContent = "Added to cart.";
+    track("add_to_cart", { currency: "INR", value: PRICE, items: [{ item_name: "LumaBar Magnetic LED Light", price: PRICE, quantity: 1 }] });
   });
   document.getElementById("cartOpen").addEventListener("click", openCart);
   document.getElementById("cartClose").addEventListener("click", closeCart);
   scrim.addEventListener("click", closeCart);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCart(); });
   document.getElementById("checkout").addEventListener("click", function () {
+    track("begin_checkout", { currency: "INR", value: PRICE * qty });
     document.getElementById("ckmsg").textContent = "Checkout is not available yet.";
   });
   render();
