@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LumaBar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: dim walnut room, one amber light source. Glow is the single bold move; everything else stays quiet. */
+:root {
+  --bg: #1b140f;
+  --surface: #261c15;
+  --surface-2: #31241b;
+  --line: #43332a;
+  --fg: #f4e9dc;
+  --muted: #b9a692;
+  --amber: #ffb547;
+  --amber-deep: #e58a14;
+  --on-amber: #2a1706;
+  --ok: #8fd19e;
+  --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; padding-inline: 16px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+p { margin: 0; }
+a { color: inherit; }
+.wrap { max-width: 1080px; margin-inline: auto; }
+section { padding-block: 56px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); font-weight: 600; }
+h2 { font-size: clamp(28px, 5vw, 40px); font-weight: 700; margin-top: 8px; }
+.lede { color: var(--muted); max-width: 56ch; margin-top: 12px; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 10px; font: 600 16px var(--body); text-decoration: none; border: 1px solid transparent; cursor: pointer; }
+.btn-primary { background: var(--amber); color: var(--on-amber); }
+.btn-primary:hover { background: #ffc46d; }
+.btn-ghost { border-color: var(--line); color: var(--fg); background: transparent; }
+.btn-ghost:hover { background: var(--surface); }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; margin-inline: -16px; padding-inline: 16px; background: rgba(27,20,15,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 20px; min-height: 60px; }
+.logo { font: 800 22px var(--display); text-decoration: none; display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.logo i { width: 22px; height: 6px; border-radius: 3px; background: var(--amber); box-shadow: 0 0 12px 2px rgba(255,181,71,.7); display: inline-block; }
+.nav { display: flex; gap: 20px; }
+.nav a { text-decoration: none; color: var(--muted); font-size: 15px; }
+.nav a:hover { color: var(--fg); }
+.top .btn { min-height: 40px; padding: 0 16px; font-size: 14px; }
+@media (max-width: 640px) { .nav { display: none; } }
+
+/* hero */
+.hero { padding-block: 40px 56px; }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+.hero .copy { min-width: 0; }
+.deal { display: inline-flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 14px; }
+.deal b { color: var(--amber); font-variant-numeric: tabular-nums; }
+.deal s { color: var(--muted); }
+h1 { font-size: clamp(38px, 7vw, 64px); font-weight: 800; margin-top: 18px; }
+h1 em { font-style: normal; color: var(--amber); }
+.hero .sub { color: var(--muted); font-size: 18px; max-width: 46ch; margin-top: 16px; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.trust { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 24px; font-size: 14px; color: var(--muted); }
+.trust span::before { content: "✓ "; color: var(--ok); }
+
+.scene { position: relative; aspect-ratio: 5 / 4; max-width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg, #140e0a 0%, #1f1610 100%); }
+.scene .shelf { position: absolute; left: 6%; right: 6%; top: 30%; height: 14px; background: linear-gradient(180deg, #7a5233, #5a3b24); border-radius: 3px; box-shadow: 0 6px 0 #3b2616; }
+.scene .bar { position: absolute; left: 14%; right: 14%; top: calc(30% + 14px + 6px); height: 12px; border-radius: 6px; background: #fff3d6; box-shadow: 0 0 20px 6px rgba(255,181,71,.8), 0 0 80px 30px rgba(255,160,50,.35); animation: breathe 5s ease-in-out infinite; }
+.scene .cone { position: absolute; left: 10%; right: 10%; top: calc(30% + 32px); bottom: 0; background: linear-gradient(180deg, rgba(255,181,71,.38), rgba(255,181,71,0) 85%); clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%); }
+.scene .desk { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: linear-gradient(180deg, #6b4a2f, #4a321f); }
+.scene .book { position: absolute; bottom: 22%; left: 28%; width: 26%; height: 9%; background: #d9c3a0; border-radius: 2px 6px 2px 2px; box-shadow: inset 0 -5px 0 #b69b73; }
+.scene .tag { position: absolute; right: 10px; top: 10px; font-size: 12px; background: rgba(27,20,15,.8); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--muted); }
+.scene { aspect-ratio: 730 / 664; background: var(--surface); }
+.scene img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@keyframes breathe { 50% { box-shadow: 0 0 16px 4px rgba(255,181,71,.7), 0 0 70px 24px rgba(255,160,50,.3); } }
+@media (prefers-reduced-motion: reduce) { .scene .bar { animation: none; } html { scroll-behavior: auto; } }
+@media (max-width: 800px) { .hero .wrap { grid-template-columns: 1fr; } }
+
+/* features */
+.grid { display: grid; gap: 16px; margin-top: 32px; }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g3 { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .g4 { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0; }
+.card h3 { font-size: 19px; font-weight: 700; margin-top: 14px; }
+.card p { color: var(--muted); font-size: 15px; margin-top: 8px; }
+.ico { width: 44px; height: 44px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; color: var(--amber); }
+.ico svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* use cases */
+.uses { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 32px; }
+@media (max-width: 900px) { .uses { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.use { border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: linear-gradient(160deg, var(--surface-2), var(--surface)); min-width: 0; }
+.use .where { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); font-weight: 600; }
+.use h3 { font-size: 18px; margin-top: 10px; }
+.use p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+/* reviews */
+.stars { color: var(--amber); letter-spacing: 2px; font-size: 15px; }
+.rev p { color: var(--fg); font-size: 16px; margin-top: 10px; }
+.who { margin-top: 14px; font-size: 14px; color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); margin-top: 16px; }
+
+/* offer */
+.offer { border: 1px solid var(--amber-deep); border-radius: 18px; padding: clamp(22px, 5vw, 40px); background: radial-gradient(120% 140% at 85% 0%, rgba(255,181,71,.16), transparent 60%), var(--surface); display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center; }
+@media (max-width: 800px) { .offer { grid-template-columns: 1fr; } }
+.price { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.price .now { font: 800 clamp(48px, 9vw, 72px) var(--display); color: var(--amber); font-variant-numeric: tabular-nums; }
+.price s { color: var(--muted); font-size: 20px; }
+.price .off { background: var(--amber); color: var(--on-amber); font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+.perks { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 6px; color: var(--muted); font-size: 15px; }
+.perks li::before { content: "✓ "; color: var(--ok); }
+.timer { display: flex; gap: 10px; margin-top: 18px; }
+.timer div { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; text-align: center; min-width: 64px; }
+.timer b { display: block; font: 700 26px var(--display); font-variant-numeric: tabular-nums; }
+.timer span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stock { margin-top: 20px; }
+.stock .row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+.stock .row b { color: var(--amber); }
+.meter { height: 8px; background: var(--bg); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 17%; background: linear-gradient(90deg, var(--amber-deep), var(--amber)); }
+.cart { width: 100%; margin-top: 20px; min-height: 56px; font-size: 18px; }
+.toast { margin-top: 12px; font-size: 14px; color: var(--ok); min-height: 22px; }
+
+/* faq */
+details { border-bottom: 1px solid var(--line); padding-block: 4px; }
+summary { cursor: pointer; font-weight: 600; padding-block: 14px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--amber); font-size: 22px; line-height: 1; }
+details[open] summary::after { content: "−"; }
+details p { color: var(--muted); padding-bottom: 16px; max-width: 64ch; }
+
+/* cart */
+.cart-open { gap: 6px; padding: 0 12px; }
+.count { background: var(--amber); color: var(--on-amber); font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: inline-grid; place-items: center; padding-inline: 5px; font-variant-numeric: tabular-nums; }
+.scrim { position: fixed; inset: 0; background: rgba(10,6,3,.6); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 100%); background: var(--surface); border-left: 1px solid var(--line); z-index: 21; display: flex; flex-direction: column; transform: translateX(105%); transition: transform .25s ease; padding-top: env(safe-area-inset-top, 0px); }
+.drawer.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
+.d-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.d-head h2 { font-size: 22px; margin: 0; }
+.x { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; min-width: 40px; min-height: 40px; }
+.d-body { flex: 1; overflow-y: auto; padding: 20px; min-height: 0; }
+.empty { color: var(--muted); text-align: center; padding-block: 40px; }
+.item { display: grid; grid-template-columns: 72px 1fr; gap: 14px; }
+.item img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.item h3 { font-size: 16px; }
+.item .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.item .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; }
+.qty button { background: none; border: 0; color: var(--fg); width: 36px; height: 36px; font-size: 18px; cursor: pointer; }
+.qty span { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.rm { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: 14px var(--body); }
+.d-foot { padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
+.line { display: flex; justify-content: space-between; color: var(--muted); font-size: 15px; padding-block: 3px; font-variant-numeric: tabular-nums; }
+.line b { color: var(--fg); }
+.line .free { color: var(--ok); }
+.line.total { font-size: 18px; margin-top: 6px; }
+.line.total b { color: var(--amber); }
+footer { border-top: 1px solid var(--line); padding-block: 32px 40px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+footer p { max-width: 60ch; }
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VMQ938EE16"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-VMQ938EE16');
+</script>
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://plausible.io/js/pa-dDowmAxC0BWWASAAsG-zR.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top"><i></i>LumaBar</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#uses">Use-cases</a>
+      <a href="#reviews">Reviews</a>
+    </nav>
+    <button class="btn btn-ghost cart-open" id="cartOpen" type="button" aria-label="Open cart">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/></svg>
+      <span class="count" id="cartCount">0</span>
+    </button>
+    <a class="btn btn-primary" href="#buy">Buy Now - ₹199</a>
+  </div>
+</header>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Shopping cart" aria-hidden="true">
+  <div class="d-head"><h2>Your cart</h2><button class="x" id="cartClose" type="button" aria-label="Close cart">✕</button></div>
+  <div class="d-body" id="cartBody"></div>
+  <div class="d-foot" id="cartFoot" hidden>
+    <div class="line"><span>Subtotal</span><b id="sub">₹0</b></div>
+    <div class="line"><span>Delivery</span><b class="free">Free</b></div>
+    <div class="line total"><span>Total</span><b id="tot">₹0</b></div>
+    <button class="btn btn-primary" id="checkout" type="button" style="width:100%;margin-top:14px">Proceed to Checkout</button>
+    <div class="toast" id="ckmsg" role="status"></div>
+  </div>
+</aside>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="copy">
+        <div class="deal">Special deal <b>₹199</b> <s>₹499</s> <span>60% OFF</span></div>
+        <h1>Brighten your study space. <em>Zero wires, zero drill.</em></h1>
+        <p class="sub">A sleek, touch-controlled magnetic LED light bar that sticks anywhere you need it.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#buy">Buy Now</a>
+          <a class="btn btn-ghost" href="#features">Watch How It Works</a>
+        </div>
+        <div class="trust"><span>Free delivery</span><span>USB rechargeable</span><span>Dimmable</span></div>
+      </div>
+      <div class="scene">
+        <img src="lumabar-lamp.jpg" width="730" height="664" alt="LumaBar mounted under a wooden shelf, with a finger tapping the touch button to turn on the warm light">
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="eyebrow">Features</div>
+      <h2>Stick it. Tap it. Study.</h2>
+      <p class="lede">Everything you need from a desk lamp, without the cable and without the footprint.</p>
+      <div class="grid g4">
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><path d="M6 7h4M14 7h4"/></svg></div>
+          <h3>Magnetic mount</h3>
+          <p>Stick the base anywhere and snap the light bar on or off in a second.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M9 11V5a2 2 0 0 1 4 0v6"/><path d="M13 9a2 2 0 0 1 4 0v4a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-2-3 2-1 2 1V8"/></svg></div>
+          <h3>Smart touch control</h3>
+          <p>Tap to turn on or off. Long-press to dim or brighten smoothly.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="16" height="9" rx="2"/><path d="M21 11v3M8 12.5h4"/></svg></div>
+          <h3>USB rechargeable</h3>
+          <p>Built-in battery. Charge it from a laptop or phone charger, no cells to replace.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>Eye-care LED</h3>
+          <p>Soft, flicker-free warm light made for late-night study sessions.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="uses">
+    <div class="wrap">
+      <div class="eyebrow">Use-cases</div>
+      <h2>One light, four corners of your room</h2>
+      <div class="uses">
+        <article class="use"><div class="where">Hostel desk</div><h3>Desk &amp; study lamp</h3><p>Stick it under a shelf and read without waking your roommate.</p></article>
+        <article class="use"><div class="where">Bedroom</div><h3>Wardrobe &amp; closet light</h3><p>See your clothes at 6 AM without switching on the main light.</p></article>
+        <article class="use"><div class="where">Dressing area</div><h3>Vanity light</h3><p>Even, soft light along a mirror or dressing table edge.</p></article>
+        <article class="use"><div class="where">Power cut</div><h3>Emergency light bar</h3><p>Pull it off the base and carry it like a slim flashlight.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="reviews">
+    <div class="wrap">
+      <div class="eyebrow">Reviews</div>
+      <h2>Loved by late-night studiers</h2>
+      <div class="grid g3">
+        <article class="card rev"><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><p>Perfect for my late-night study sessions without waking up my roommate!</p><div class="who">Riya S. · Pune</div></article>
+        <article class="card rev"><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><p>Stuck it under my bookshelf in ten seconds. No drilling, and the brightness dial is smooth.</p><div class="who">Aman K. · Nagpur</div></article>
+        <article class="card rev"><div class="stars" aria-label="5 out of 5 stars">★★★★★</div><p>Using it inside my wardrobe. One charge lasts me days. Great for ₹199.</p><div class="who">Neha P. · Mumbai</div></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="buy">
+    <div class="wrap">
+      <div class="offer">
+        <div>
+          <div class="eyebrow">Today's offer</div>
+          <div class="price"><span class="now">₹199</span><s>M.R.P. ₹499</s><span class="off">60% OFF</span></div>
+          <ul class="perks">
+            <li>Free delivery</li>
+            <li>Magnetic base and USB charging cable included</li>
+            <li>Touch dimmer, no remote needed</li>
+          </ul>
+        </div>
+        <div>
+          <div class="eyebrow">Limited stock left</div>
+          <div class="stock">
+            <div class="row"><span>Stock remaining</span><b>Only 17 left</b></div>
+            <div class="meter"><i></i></div>
+          </div>
+          <button class="btn btn-primary cart" id="cart" type="button">Add to Cart</button>
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="eyebrow">FAQ</div>
+      <h2>Quick answers</h2>
+      <div style="margin-top: 24px; max-width: 760px;">
+        <details><summary>How do I stick it on a wall or shelf?</summary><p>Peel the backing from the magnetic base, press it onto a clean, dry surface for a few seconds, then snap the light bar on.</p></details>
+        <details><summary>How do I change the brightness?</summary><p>Tap the bar once to turn it on or off. Press and hold to move smoothly between dim and bright, then release where you like it.</p></details>
+        <details><summary>How do I charge it?</summary><p>Take the bar off the base and plug in the USB cable. Any phone or laptop charger works.</p></details>
+        <details><summary>Can I use it as a torch?</summary><p>Yes. Detach the bar and carry it. It works as a slim emergency light.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="logo" href="#top"><i></i>LumaBar</a>
+    </div>
+    <nav aria-label="Footer">
+      <a href="#features">Features</a>
+      <a href="#uses">Use-cases</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <p>© 2026 LumaBar. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var PRICE = 199, qty = 0;
+  function track(name, params) { try { if (window.gtag) gtag("event", name, params || {}); } catch (e) {} try { if (window.plausible) plausible(name); } catch (e) {} }
+  document.querySelectorAll('a[href="#buy"]').forEach(function (a) {
+    a.addEventListener("click", function () { track("buy_now_click", { location: a.closest("header") ? "header" : "hero" }); });
+  });
+  try { qty = Math.max(0, Math.min(10, parseInt(localStorage.getItem("lumabar-qty"), 10) || 0)); } catch (e) {}
+  var drawer = document.getElementById("drawer"), scrim = document.getElementById("scrim");
+  function inr(n) { return "₹" + n.toLocaleString("en-IN"); }
+  function save() { try { localStorage.setItem("lumabar-qty", String(qty)); } catch (e) {} }
+  function render() {
+    document.getElementById("cartCount").textContent = qty;
+    var body = document.getElementById("cartBody"), foot = document.getElementById("cartFoot");
+    document.getElementById("ckmsg").textContent = "";
+    if (!qty) {
+      body.innerHTML = '<div class="empty">Your cart is empty.<br>Add a LumaBar to get started.</div>';
+      foot.hidden = true;
+      return;
+    }
+    body.innerHTML =
+      '<div class="item"><img src="lumabar-lamp.jpg" alt="">' +
+      '<div><h3>LumaBar Magnetic LED Light</h3><div class="meta">Touch dimmer · USB rechargeable · ' + inr(PRICE) + '</div>' +
+      '<div class="row"><div class="qty"><button type="button" id="dec" aria-label="Decrease quantity">−</button><span aria-live="polite">' + qty + '</span><button type="button" id="inc" aria-label="Increase quantity">+</button></div>' +
+      '<button class="rm" type="button" id="rm">Remove</button></div></div></div>';
+    foot.hidden = false;
+    document.getElementById("sub").textContent = inr(PRICE * qty);
+    document.getElementById("tot").textContent = inr(PRICE * qty);
+    document.getElementById("dec").onclick = function () { qty = Math.max(0, qty - 1); save(); render(); };
+    document.getElementById("inc").onclick = function () { qty = Math.min(10, qty + 1); save(); render(); };
+    document.getElementById("rm").onclick = function () { qty = 0; save(); render(); };
+  }
+  function openCart() { drawer.classList.add("open"); drawer.setAttribute("aria-hidden", "false"); scrim.hidden = false; }
+  function closeCart() { drawer.classList.remove("open"); drawer.setAttribute("aria-hidden", "true"); scrim.hidden = true; }
+  document.getElementById("cart").addEventListener("click", function () {
+    qty = Math.min(10, qty + 1); save(); render(); openCart();
+    document.getElementById("toast").textContent = "Added to cart.";
+    track("add_to_cart", { currency: "INR", value: PRICE, items: [{ item_name: "LumaBar Magnetic LED Light", price: PRICE, quantity: 1 }] });
+  });
+  document.getElementById("cartOpen").addEventListener("click", openCart);
+  document.getElementById("cartClose").addEventListener("click", closeCart);
+  scrim.addEventListener("click", closeCart);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeCart(); });
+  document.getElementById("checkout").addEventListener("click", function () {
+    track("begin_checkout", { currency: "INR", value: PRICE * qty });
+    document.getElementById("ckmsg").textContent = "Checkout is not available yet.";
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>
